@@ -1,3 +1,4 @@
 video-processing-service/meep.mp4
 video-processing-service/processed-meep.mp4
 .env
+quiz-service/.env.local

@@ -1,26 +1,19 @@
-import { GoogleGenerativeAI, SchemaType, Schema } from "@google/generative-ai";
+import { GoogleGenAI} from "@google/genai";
 import { VideoQuiz } from "./types";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
-const quizSchema: Schema = {
-  type: SchemaType.OBJECT,
+const quizSchema = {
+  type: "OBJECT",
   properties: {
-    title: { 
-      type: SchemaType.STRING 
-    },
+    title: { type: "STRING" },
     questions: {
-      type: SchemaType.ARRAY,
+      type: "ARRAY",
       items: {
-        type: SchemaType.OBJECT,
+        type: "OBJECT",
         properties: {
-          question: { type: SchemaType.STRING },
-          options: { 
-            type: SchemaType.ARRAY, 
-            items: { type: SchemaType.STRING } 
-          },
-          answer: { type: SchemaType.STRING },
-          explanation: { type: SchemaType.STRING },
+          question: { type: "STRING" },
+          options: { type: "ARRAY", items: { type: "STRING" } },
+          answer: { type: "STRING" },
+          explanation: { type: "STRING" },
         },
         required: ["question", "options", "answer", "explanation"],
       },
@@ -30,17 +23,31 @@ const quizSchema: Schema = {
 };
 
 export async function generateQuizFromTranscript(transcript: string, videoId: string): Promise<VideoQuiz> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-pro",
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: quizSchema,
-    },
-  });
-
-  const prompt = `Generate a 5-question educational quiz based on this transcript: ${transcript}`;
-  const result = await model.generateContent(prompt);
+  const apiKey = process.env.GEMINI_API_KEY;
   
-  const quizData = JSON.parse(result.response.text());
-  return { videoId, ...quizData };
+  if (!apiKey) {
+    throw new Error(" GEMINI_API_KEY is undefined. Check your .env file and import order.");
+  }
+
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+  const gemini_ai = new GoogleGenAI({ apiKey });
+
+  const prompt = `Generate a 5-question quiz based on this: ${transcript}`;
+
+  try {
+    const result = await gemini_ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: quizSchema,
+      },
+    });
+
+    return { videoId, ...JSON.parse(result.text || "{}") };
+  } catch (error: any) {
+    console.error("AI Error Details:", error.message);
+    throw error;
+  }
 }

@@ -2,3 +2,5 @@ video-processing-service/meep.mp4
 video-processing-service/processed-meep.mp4
 .env
 quiz-service/.env.local
+yt-web-client/app/firebase/firebase.ts
+yt-web-client/app/firebase/firebase.ts
